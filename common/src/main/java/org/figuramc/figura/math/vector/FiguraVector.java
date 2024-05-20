@@ -1,10 +1,12 @@
 package org.figuramc.figura.math.vector;
 
+import org.figuramc.figura.avatar.Avatar;
 import org.figuramc.figura.lua.FiguraLuaPrinter;
+import org.figuramc.figura.lua.BoundaryManager;
 import org.figuramc.figura.math.matrix.FiguraMatrix;
 import org.figuramc.figura.utils.MathUtils;
 
-public abstract class FiguraVector<T extends FiguraVector<T, M>, M extends FiguraMatrix<M, T>> {
+public abstract class FiguraVector<T extends FiguraVector<T, M>, M extends FiguraMatrix<M, T>> implements BoundaryManager.Transformable {
 
     public abstract double lengthSquared();
     public double length() {
@@ -122,5 +124,10 @@ public abstract class FiguraVector<T extends FiguraVector<T, M>, M extends Figur
         }
 
         return sb.append("}").toString();
+    }
+
+    @Override
+    public Object transform(Object value, Avatar avatar, Avatar into) {
+        return ((FiguraVector<?, ?>) value).copy();
     }
 }

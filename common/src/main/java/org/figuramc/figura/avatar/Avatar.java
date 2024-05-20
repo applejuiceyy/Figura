@@ -78,6 +78,7 @@ import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 // the avatar class
 // contains all things related to the avatar
@@ -320,6 +321,14 @@ public class Avatar {
 
     @Nullable
     public Varargs run(Object toRun, Instructions limit, Object... args) {
+        return prepareRun(() -> luaRuntime.run(toRun, limit, args));
+    }
+
+    public Varargs runWithoutCapture(Object toRun, Instructions limit, Object... args) {
+        return prepareRun(() -> luaRuntime.runWithoutCapture(toRun, limit, args));
+    }
+
+    private Varargs prepareRun(Supplier<Varargs> runner) {
         // stuff that was not run yet
         flushQueuedEvents();
 
@@ -327,7 +336,7 @@ public class Avatar {
             return null;
 
         // run event
-        Varargs ret = luaRuntime.run(toRun, limit, args);
+        Varargs ret = runner.get();
 
         // stuff that this run produced
         flushQueuedEvents();

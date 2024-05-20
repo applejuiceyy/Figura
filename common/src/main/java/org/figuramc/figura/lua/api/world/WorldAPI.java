@@ -448,16 +448,6 @@ public class WorldAPI {
         }
     }
 
-    @LuaWhitelist
-    @LuaMethodDoc("world.avatar_vars")
-    public static Map<String, LuaTable> avatarVars() {
-        HashMap<String, LuaTable> varList = new HashMap<>();
-        for (Avatar avatar : AvatarManager.getLoadedAvatars()) {
-            LuaTable tbl = avatar.luaRuntime == null ? new LuaTable() : avatar.luaRuntime.avatar_meta.storedStuff;
-            varList.put(avatar.owner.toString(), new ReadOnlyLuaTable(tbl));
-        }
-        return varList;
-    }
 
     @LuaWhitelist
     @LuaMethodDoc(

@@ -1,9 +1,11 @@
 package org.figuramc.figura.math.matrix;
 
+import org.figuramc.figura.avatar.Avatar;
 import org.figuramc.figura.lua.FiguraLuaPrinter;
+import org.figuramc.figura.lua.BoundaryManager;
 import org.figuramc.figura.math.vector.FiguraVector;
 
-public abstract class FiguraMatrix<T extends FiguraMatrix<T, V>, V extends FiguraVector<V, T>> {
+public abstract class FiguraMatrix<T extends FiguraMatrix<T, V>, V extends FiguraVector<V, T>> implements BoundaryManager.Transformable {
 
     protected T cachedInverse = null;
     protected double cachedDeterminant = Double.NaN;
@@ -84,6 +86,11 @@ public abstract class FiguraMatrix<T extends FiguraMatrix<T, V>, V extends Figur
         }
 
         return sb.append("\n]").toString();
+    }
+
+    @Override
+    public Object transform(Object value, Avatar avatar, Avatar into) {
+        return ((FiguraMatrix<?, ?>) value).copy();
     }
 
     public static abstract class DummyMatrix<V extends FiguraVector<V, DummyMatrix<V>>> extends FiguraMatrix<DummyMatrix<V>, V> {}

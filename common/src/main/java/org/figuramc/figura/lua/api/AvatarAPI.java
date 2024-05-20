@@ -49,19 +49,6 @@ public class AvatarAPI {
     }
 
     @LuaWhitelist
-    @LuaMethodDoc(
-            overloads = @LuaMethodOverload(
-                    argumentTypes = {String.class, Object.class},
-                    argumentNames = {"key", "value"}
-            ),
-            value = "avatar.store"
-    )
-    public AvatarAPI store(@LuaNotNil String key, LuaValue value) {
-        storedStuff.set(key, value == null ? LuaValue.NIL : value);
-        return this;
-    }
-
-    @LuaWhitelist
     @LuaMethodDoc("avatar.get_uuid")
     public String getUUID() {
         return avatar.owner.toString();

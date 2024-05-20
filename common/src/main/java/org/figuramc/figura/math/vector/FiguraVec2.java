@@ -1,5 +1,6 @@
 package org.figuramc.figura.math.vector;
 
+import org.figuramc.figura.avatar.Avatar;
 import org.figuramc.figura.lua.LuaNotNil;
 import org.figuramc.figura.lua.LuaWhitelist;
 import org.figuramc.figura.lua.docs.*;
@@ -470,7 +471,8 @@ public class FiguraVec2 extends FiguraVector<FiguraVec2, FiguraMat2> {
         return getString(x, y);
     }
 
-    // -- metamethods -- // 
+
+    // -- metamethods -- //
 
     @LuaWhitelist
     @LuaMetamethodDoc(

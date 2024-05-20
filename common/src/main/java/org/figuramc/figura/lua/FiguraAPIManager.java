@@ -137,6 +137,8 @@ public class FiguraAPIManager {
 
         add(AvatarAPI.class);
 
+        add(ShareAPI.class);
+
         add(ConfigAPI.class);
 
         add(TextureAtlasAPI.class);
@@ -194,6 +196,7 @@ public class FiguraAPIManager {
         put("resources", r -> new ResourcesAPI(r.owner));
         put("net", r -> new NetworkingAPI(r.owner));
         put("raycast", r -> new RaycastAPI(r.owner));
+        put("share", r -> new ShareAPI(r.owner));
     }};
 
     private static final Set<FiguraAPI> ENTRYPOINTS = new HashSet<>();

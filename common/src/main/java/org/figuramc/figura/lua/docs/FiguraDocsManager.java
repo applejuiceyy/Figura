@@ -198,7 +198,8 @@ public class FiguraDocsManager {
         ));
 
         put("avatar", List.of(
-                AvatarAPI.class
+                AvatarAPI.class,
+                ShareAPI.class
         ));
 
         put("particles", List.of(

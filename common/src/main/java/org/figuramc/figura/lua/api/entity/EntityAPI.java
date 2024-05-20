@@ -18,11 +18,9 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
-import org.figuramc.figura.avatar.Avatar;
 import org.figuramc.figura.avatar.AvatarManager;
 import org.figuramc.figura.lua.LuaWhitelist;
 import org.figuramc.figura.lua.NbtToLua;
-import org.figuramc.figura.lua.ReadOnlyLuaTable;
 import org.figuramc.figura.lua.api.world.ItemStackAPI;
 import org.figuramc.figura.lua.docs.LuaMetamethodDoc;
 import org.figuramc.figura.lua.docs.LuaMetamethodDoc.LuaMetamethodOverload;
@@ -36,7 +34,6 @@ import org.figuramc.figura.utils.EntityUtils;
 import org.figuramc.figura.utils.LuaUtils;
 import org.jetbrains.annotations.NotNull;
 import org.luaj.vm2.LuaTable;
-import org.luaj.vm2.LuaValue;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -71,7 +68,7 @@ public class EntityAPI<T extends Entity> {
         return new EntityAPI<>(e);
     }
 
-    protected final boolean checkEntity() {
+    public final boolean checkEntity() {
         boolean thingy = true;
         if (entity.isRemoved() || getLevel() != Minecraft.getInstance().level) {
             @SuppressWarnings("unchecked")
@@ -457,25 +454,6 @@ public class EntityAPI<T extends Entity> {
             return new Object[]{EntityAPI.wrap(entityHit.getEntity()), FiguraVec3.fromVec3(entityHit.getLocation())};
 
         return null;
-    }
-
-    @LuaWhitelist
-    @LuaMethodDoc(
-            overloads = {
-                    @LuaMethodOverload,
-                    @LuaMethodOverload(
-                            argumentTypes = String.class,
-                            argumentNames = "key"
-                    )
-            },
-            value = "entity.get_variable"
-    )
-    public LuaValue getVariable(String key) {
-        checkEntity();
-        Avatar a = AvatarManager.getAvatar(entity);
-        LuaTable table = a == null || a.luaRuntime == null ? new LuaTable() : a.luaRuntime.avatar_meta.storedStuff;
-        table = new ReadOnlyLuaTable(table);
-        return key == null ? table : table.get(key);
     }
 
     @LuaWhitelist

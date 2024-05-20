@@ -66,9 +66,13 @@ public class FiguraLuaRuntime {
     private final Map<String, Varargs> loadedScripts = new HashMap<>();
     private final Stack<String> loadingScripts = new Stack<>();
     public final LuaTypeManager typeManager = new LuaTypeManager();
+    public final BoundaryManager boundaryManager;
+    private boolean running = false;
+    private boolean runningWithCapture = false;
 
     public FiguraLuaRuntime(Avatar avatar, Map<String, String> scripts) {
         this.owner = avatar;
+        boundaryManager = new BoundaryManager(owner);
         this.scripts.putAll(scripts);
 
         // Each user gets their own set of globals as well.
@@ -167,6 +171,9 @@ public class FiguraLuaRuntime {
         setGlobal("type", new OneArgFunction() {
             @Override
             public LuaValue call(LuaValue arg) {
+                if(arg instanceof BoundaryManager.ForeignTable t) {
+                    return t.translate(this::call, arg);
+                }
                 if (arg.type() == LuaValue.TUSERDATA)
                     return LuaString.valueOf(typeManager.getTypeName(arg.checkuserdata().getClass()));
                 if (arg.type() == LuaValue.TTABLE && arg.getmetatable() != null) {
@@ -183,12 +190,49 @@ public class FiguraLuaRuntime {
             }
         });
 
+        // Change the getmetatable() function
+        LuaFunction globalSetMetatable = userGlobals.get("setmetatable").checkfunction();
+        setGlobal("setmetatable", new TwoArgFunction() {
+            @Override
+            public LuaValue call(LuaValue arg1, LuaValue arg2) {
+                if (arg1 instanceof BoundaryManager.ForeignTable t) {
+                    t.foreignSetMetatable(arg2);
+                }
+                else {
+                    globalSetMetatable.call(arg1, arg2);
+                }
+                return arg1;
+            }
+
+            @Override
+            public String tojstring() {
+                return typename() + ": setmetatable";
+            }
+        });
+
+        // Change the getmetatable() function
+        LuaFunction globalGetMetatable = userGlobals.get("getmetatable").checkfunction();
+        setGlobal("getmetatable", new OneArgFunction() {
+            @Override
+            public LuaValue call(LuaValue arg) {
+                return arg instanceof BoundaryManager.ForeignTable t ? t.foreignGetMetatable() : globalGetMetatable.call(arg);
+            }
+
+            @Override
+            public String tojstring() {
+                return typename() + ": getmetatable";
+            }
+        });
+
         // Change the pairs() function
         LuaFunction globalPairs = userGlobals.get("pairs").checkfunction();
         setGlobal("pairs", new VarArgFunction() {
             @Override
             public Varargs invoke(Varargs varargs) {
                 LuaValue arg1 = varargs.arg1();
+                if(arg1 instanceof BoundaryManager.ForeignTable t) {
+                    return t.translate(this::invoke, varargs);
+                }
                 int type = arg1.type();
                 if ((type == LuaValue.TTABLE || type == LuaValue.TUSERDATA) && arg1.getmetatable() != null) {
                     LuaValue __pairs = arg1.getmetatable().rawget("__pairs");
@@ -210,6 +254,9 @@ public class FiguraLuaRuntime {
             @Override
             public Varargs invoke(Varargs varargs) {
                 LuaValue arg1 = varargs.arg1();
+                if(arg1 instanceof BoundaryManager.ForeignTable t) {
+                    return t.translate(this::invoke, varargs);
+                }
                 int type = arg1.type();
                 if ((type == LuaValue.TTABLE || type == LuaValue.TUSERDATA) && arg1.getmetatable() != null) {
                     LuaValue __ipairs = arg1.getmetatable().rawget("__ipairs");
@@ -418,7 +465,9 @@ public class FiguraLuaRuntime {
     private final ZeroArgFunction onReachedLimit = new ZeroArgFunction() {
         @Override
         public LuaValue call() {
-            FiguraMod.LOGGER.warn("Avatar {} bypassed resource limits with {} instructions", owner.owner, getInstructions());
+            if(runningWithCapture) {
+                FiguraMod.LOGGER.warn("Avatar {} bypassed resource limits with {} instructions", owner.owner, getInstructions());
+            }
             LuaError error = new LuaError("Script overran resource limits!");
             owner.noPermissions.add(Permissions.INIT_INST);
             setInstructionLimit(1);
@@ -439,6 +488,10 @@ public class FiguraLuaRuntime {
         userGlobals.running.state.bytecodes += amount;
     }
 
+    public boolean isRunning() {
+        return running;
+    }
+
     // script execution //
 
     public LuaValue load(String name, String src) {
@@ -446,6 +499,22 @@ public class FiguraLuaRuntime {
     }
 
     public Varargs run(Object toRun, Avatar.Instructions limit, Object... args) {
+        runningWithCapture = true;
+        try {
+            runWithoutCapture(toRun, limit, args);
+        }
+        catch (Exception | StackOverflowError e) {
+            error(e);
+        }
+        finally {
+            runningWithCapture = false;
+        }
+
+        // failsafe return
+        return null;
+    }
+
+    public Varargs runWithoutCapture(Object toRun, Avatar.Instructions limit, Object... args) {
         // parse args
         LuaValue[] values = new LuaValue[args.length];
         for (int i = 0; i < values.length; i++)
@@ -456,6 +525,7 @@ public class FiguraLuaRuntime {
         // set instructions limit
         setInstructionLimit(limit.remaining);
 
+        running = true;
         // get and call event
         try {
             Varargs ret;
@@ -472,11 +542,9 @@ public class FiguraLuaRuntime {
             limit.use(getInstructions());
             // and return the value
             return ret;
-        } catch (Exception | StackOverflowError e) {
-            error(e);
         }
-
-        // failsafe return
-        return null;
+        finally {
+            running = false;
+        }
     }
 }
